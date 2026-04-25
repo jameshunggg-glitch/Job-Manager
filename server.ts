@@ -3,6 +3,7 @@ import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import db from './server/db.ts';
 import { KEYWORD_CATEGORIES, ALL_KEYWORDS } from './server/keywords.ts';
+import { scanFolder, previewFile, importFile } from './server/imports.ts';
 
 const app = express();
 const PORT = 3000;
@@ -170,6 +171,46 @@ app.get('/api/skills/insights', (req, res) => {
     res.json({ totalJobs, topKeywords, categories, requirementsKeywords, niceToHaveKeywords });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch skill insights' });
+  }
+});
+
+// Obsidian Import routes (Phase 4)
+app.post('/api/import/obsidian/scan', (req, res) => {
+  try {
+    const { folder_path } = req.body ?? {};
+    if (typeof folder_path !== 'string' || folder_path.trim() === '') {
+      return res.status(400).json({ error: 'folder_path is required' });
+    }
+    const files = scanFolder(folder_path);
+    res.json({ files });
+  } catch (err: any) {
+    res.status(400).json({ error: err?.message ?? 'Failed to scan folder' });
+  }
+});
+
+app.post('/api/import/obsidian/preview', (req, res) => {
+  try {
+    const { file_path } = req.body ?? {};
+    if (typeof file_path !== 'string' || file_path.trim() === '') {
+      return res.status(400).json({ error: 'file_path is required' });
+    }
+    const result = previewFile(file_path);
+    res.json(result);
+  } catch (err: any) {
+    res.status(400).json({ error: err?.message ?? 'Failed to preview file' });
+  }
+});
+
+app.post('/api/import/obsidian/import', (req, res) => {
+  try {
+    const { file_path } = req.body ?? {};
+    if (typeof file_path !== 'string' || file_path.trim() === '') {
+      return res.status(400).json({ error: 'file_path is required' });
+    }
+    const result = importFile(file_path);
+    res.json(result);
+  } catch (err: any) {
+    res.status(400).json({ error: err?.message ?? 'Failed to import file' });
   }
 });
 

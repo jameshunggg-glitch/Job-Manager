@@ -44,3 +44,44 @@ export interface SkillInsightsData {
   requirementsKeywords: SkillStat[];
   niceToHaveKeywords: SkillStat[];
 }
+
+export interface ParsedJob {
+  title: string;
+  company: string;
+  location: string;
+  source: string;
+  source_url: string;
+  job_description: string;
+  requirements: string;
+  nice_to_have: string;
+  salary: string;
+  created: string | null;
+}
+
+export interface ScanResultFile {
+  path: string;
+  filename: string;
+  title: string;
+  source_url: string;
+  created: string | null;
+  already_imported: boolean;
+}
+
+export interface ScanResponse {
+  files: ScanResultFile[];
+}
+
+export interface ImportPreviewResponse {
+  parsed_job: ParsedJob;
+  warnings: string[];
+  already_imported: boolean;
+  duplicate_reason: string | null;
+  duplicate_job_id: number | null;
+}
+
+export interface ImportResponse {
+  job_id: number;
+  status: 'imported' | 'duplicate';
+  duplicate_reason?: string;
+  warnings: string[];
+}

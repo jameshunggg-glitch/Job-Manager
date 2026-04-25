@@ -26,4 +26,22 @@ db.exec(`
   );
 `);
 
+// Phase 4: additive import-metadata columns. Idempotent — safe to run on
+// existing databases. Each ALTER TABLE is wrapped so a re-run on a database
+// that already has the column does not fail.
+const IMPORT_COLUMNS: Array<[string, string]> = [
+  ['imported_from', 'TEXT'],
+  ['imported_file_path', 'TEXT'],
+  ['imported_at', 'DATETIME'],
+  ['raw_markdown', 'TEXT'],
+];
+for (const [name, type] of IMPORT_COLUMNS) {
+  try {
+    db.exec(`ALTER TABLE job_postings ADD COLUMN ${name} ${type};`);
+  } catch (err: any) {
+    const msg = String(err?.message ?? '');
+    if (!msg.includes('duplicate column name')) throw err;
+  }
+}
+
 export default db;

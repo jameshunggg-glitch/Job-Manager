@@ -1,4 +1,11 @@
-import { JobPosting, DashboardStats, SkillInsightsData } from './types';
+import {
+  JobPosting,
+  DashboardStats,
+  SkillInsightsData,
+  ScanResponse,
+  ImportPreviewResponse,
+  ImportResponse,
+} from './types';
 
 const API_BASE = '/api';
 
@@ -20,4 +27,19 @@ export const api = {
   }).then(r => r.json()),
   getStats: () => fetch(`${API_BASE}/stats`).then(r => r.json() as Promise<DashboardStats>),
   getSkillInsights: () => fetch(`${API_BASE}/skills/insights`).then(r => r.json() as Promise<SkillInsightsData>),
+  obsidianScan: (folderPath: string) => fetch(`${API_BASE}/import/obsidian/scan`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ folder_path: folderPath }),
+  }).then(r => r.json() as Promise<ScanResponse | { error: string }>),
+  obsidianPreview: (filePath: string) => fetch(`${API_BASE}/import/obsidian/preview`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ file_path: filePath }),
+  }).then(r => r.json() as Promise<ImportPreviewResponse | { error: string }>),
+  obsidianImport: (filePath: string) => fetch(`${API_BASE}/import/obsidian/import`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ file_path: filePath }),
+  }).then(r => r.json() as Promise<ImportResponse | { error: string }>),
 };

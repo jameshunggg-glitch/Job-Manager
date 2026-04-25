@@ -118,7 +118,7 @@ function ObsidianImportTab() {
     setFiles(null);
     setPreviewFile(null);
     try {
-      const res = await fetch('/api/import/scan', {
+      const res = await fetch('/api/import/obsidian/scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ folder_path: folderPath.trim() }),
@@ -136,7 +136,7 @@ function ObsidianImportTab() {
   const handleImport = async (file: ScannedFile) => {
     setImportingPath(file.path);
     try {
-      const res = await fetch('/api/import/import', {
+      const res = await fetch('/api/import/obsidian/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ file_path: file.path }),
@@ -288,7 +288,7 @@ function PreviewPanel({ file, onClose, onImport }: PreviewPanelProps) {
   useEffect(() => {
     setLoading(true);
     setError('');
-    fetch('/api/import/preview', {
+    fetch('/api/import/obsidian/preview', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ file_path: file.path }),
