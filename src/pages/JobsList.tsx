@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { api } from '../api';
 import { JobPosting } from '../types';
 import { STATUS_LABELS, STATUS_COLORS } from '../lib/utils';
-import { Search as SearchIcon, Filter, ExternalLink, Calendar, MapPin, ChevronRight } from 'lucide-react';
+import { Search as SearchIcon, Filter, ExternalLink, Calendar, MapPin, ChevronRight, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function JobsList({ onSelectJob }: { onSelectJob: (id: number) => void }) {
@@ -17,6 +17,13 @@ export default function JobsList({ onSelectJob }: { onSelectJob: (id: number) =>
       setLoading(false);
     });
   }, []);
+
+  const handleDelete = async (e: React.MouseEvent, id: number) => {
+    e.stopPropagation();
+    if (!confirm('確定要刪除這筆職缺嗎？')) return;
+    await api.deleteJob(id);
+    setJobs(prev => prev.filter(j => j.id !== id));
+  };
 
   const filteredJobs = jobs.filter(job => {
     const matchesSearch = job.title.toLowerCase().includes(filter.toLowerCase()) || 
@@ -98,9 +105,16 @@ export default function JobsList({ onSelectJob }: { onSelectJob: (id: number) =>
                   {format(new Date(job.updated_at), 'yyyy-MM-dd HH:mm')}
                 </td>
                 <td className="px-6 py-4 text-right">
-                  <button className="text-indigo-600 font-bold text-xs opacity-0 group-hover:opacity-100 transition-all uppercase tracking-widest">
-                    View
-                  </button>
+                  <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                    <span className="text-indigo-600 font-bold text-xs uppercase tracking-widest">View</span>
+                    <button
+                      onClick={(e) => handleDelete(e, job.id)}
+                      className="text-red-500 hover:text-red-700 p-1 rounded"
+                      title="刪除"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}

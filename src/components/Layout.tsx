@@ -30,9 +30,8 @@ export default function Layout({ children, currentPage, onPageChange }: LayoutPr
     <div className="flex h-screen bg-slate-50 font-sans text-slate-900">
       {/* Sidebar */}
       <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col">
-        <div className="p-6 flex items-center gap-3 border-b border-slate-800">
-          <div className="w-8 h-8 bg-indigo-600 rounded flex items-center justify-center text-white font-bold">J</div>
-          <span className="font-semibold text-white tracking-tight">Job Tracker</span>
+        <div className="p-6 flex items-center border-b border-slate-800">
+          <span className="font-semibold text-white tracking-tight">Job Manager</span>
         </div>
 
         <nav className="flex-1 p-4 space-y-1">
