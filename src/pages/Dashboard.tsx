@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { DashboardStats } from '../types';
-import { BriefcaseBusiness, Users, BarChart3, Clock } from 'lucide-react';
-import { STATUS_LABELS, STATUS_COLORS, cn } from '../lib/utils';
+import { BarChart3, Clock, ChevronRight } from 'lucide-react';
+import { STATUS_LABELS, cn } from '../lib/utils';
 import { motion } from 'motion/react';
 
-export default function Dashboard() {
+export default function Dashboard({ onPageChange }: { onPageChange?: (page: string) => void }) {
   const [stats, setStats] = useState<DashboardStats | null>(null);
 
   useEffect(() => {
@@ -52,24 +52,32 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Skills Column */}
+        {/* Skills Summary Column */}
         <div className="col-span-12 lg:col-span-4 h-full">
           <div className="bg-white p-6 rounded-xl border border-slate-200 h-full flex flex-col">
-            <h2 className="font-bold text-slate-700 mb-6 flex items-center gap-2">
-              <BarChart3 size={18} className="text-indigo-500" />
-              Skill Keyword Trends
-            </h2>
-            <div className="space-y-5 flex-1">
-              {stats.keywordStats.slice(0, 6).map((skill, idx) => {
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="font-bold text-slate-700 flex items-center gap-2">
+                <BarChart3 size={18} className="text-indigo-500" />
+                Top Skills
+              </h2>
+              <button
+                onClick={() => onPageChange?.('skill-insights')}
+                className="flex items-center gap-1 text-xs text-indigo-500 hover:text-indigo-700 font-semibold transition-colors"
+              >
+                View all <ChevronRight size={13} />
+              </button>
+            </div>
+            <div className="space-y-4 flex-1">
+              {stats.keywordStats.slice(0, 3).map((skill, idx) => {
                 const percentage = Math.round((skill.count / (stats.totalJobs || 1)) * 100);
                 return (
                   <div key={skill.keyword} className="space-y-1.5">
                     <div className="flex justify-between text-xs font-bold text-slate-700">
                       <span>{skill.keyword}</span>
-                      <span>{percentage}% ({skill.count})</span>
+                      <span className="text-slate-400">{percentage}%</span>
                     </div>
                     <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                      <motion.div 
+                      <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${percentage}%` }}
                         transition={{ duration: 1, delay: idx * 0.1 }}
@@ -79,17 +87,6 @@ export default function Dashboard() {
                   </div>
                 );
               })}
-            </div>
-            
-            <div className="mt-8 pt-6 border-t border-slate-100">
-              <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest mb-3">System Suggestions</p>
-              <div className="flex flex-wrap gap-2">
-                {['Cloud Infrastructure', 'ETL Logic', 'Documentation'].map(tag => (
-                  <span key={tag} className="px-2 py-1 bg-slate-100 text-slate-600 rounded text-[10px] font-bold uppercase">
-                    {tag}
-                  </span>
-                ))}
-              </div>
             </div>
           </div>
         </div>

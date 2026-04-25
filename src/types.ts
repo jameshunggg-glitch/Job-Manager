@@ -24,3 +24,23 @@ export interface DashboardStats {
   keywordStats: { keyword: string; count: number }[];
   statusStats: Record<string, number>;
 }
+
+export interface SkillStat {
+  keyword: string;
+  count: number;
+  percentage: number;
+}
+
+export interface SkillCategoryData {
+  name: string;
+  keywords: SkillStat[];
+  total: number;
+}
+
+export interface SkillInsightsData {
+  totalJobs: number;
+  topKeywords: SkillStat[];
+  categories: SkillCategoryData[];
+  requirementsKeywords: SkillStat[];
+  niceToHaveKeywords: SkillStat[];
+}

@@ -33,7 +33,7 @@ export default function App() {
   const renderPage = () => {
     switch (currentPage) {
       case 'dashboard':
-        return <Dashboard />;
+        return <Dashboard onPageChange={navigateTo} />;
       case 'jobs':
         return <JobsList onSelectJob={handleSelectJob} />;
       case 'skill-insights':

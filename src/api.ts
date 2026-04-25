@@ -1,4 +1,4 @@
-import { JobPosting, DashboardStats } from './types';
+import { JobPosting, DashboardStats, SkillInsightsData } from './types';
 
 const API_BASE = '/api';
 
@@ -19,4 +19,5 @@ export const api = {
     method: 'DELETE',
   }).then(r => r.json()),
   getStats: () => fetch(`${API_BASE}/stats`).then(r => r.json() as Promise<DashboardStats>),
+  getSkillInsights: () => fetch(`${API_BASE}/skills/insights`).then(r => r.json() as Promise<SkillInsightsData>),
 };

@@ -2,6 +2,7 @@ import express from 'express';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import db from './server/db.ts';
+import { KEYWORD_CATEGORIES, ALL_KEYWORDS } from './server/keywords.ts';
 
 const app = express();
 const PORT = 3000;
@@ -99,16 +100,8 @@ app.delete('/api/jobs/:id', (req, res) => {
 app.get('/api/stats', (req, res) => {
   try {
     const jobs = db.prepare('SELECT job_description, requirements, nice_to_have, status FROM job_postings').all() as any[];
-    
-    const keywords = [
-      'Python', 'SQL', 'Excel', 'Tableau', 'Power BI', 'Machine Learning', 
-      'Statistics', 'Data Visualization', 'ETL', 'API', 'Git', 'Docker',
-      'AWS', 'GCP', 'Azure', 'BigQuery', 'Snowflake', 'PostgreSQL', 'MySQL',
-      'Communication', 'Stakeholder', 'Business Analysis', 'Problem Solving', 
-      'Presentation', 'Reporting'
-    ];
 
-    const keywordStats = keywords.map(kw => {
+    const keywordStats = ALL_KEYWORDS.map(kw => {
       const count = jobs.filter(job => {
         const text = `${job.job_description} ${job.requirements} ${job.nice_to_have}`.toLowerCase();
         return text.includes(kw.toLowerCase());
@@ -128,6 +121,55 @@ app.get('/api/stats', (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch stats' });
+  }
+});
+
+app.get('/api/skills/insights', (req, res) => {
+  try {
+    const jobs = db.prepare('SELECT job_description, requirements, nice_to_have FROM job_postings').all() as any[];
+    const totalJobs = jobs.length;
+
+    const matchCount = (keyword: string, field: string) =>
+      jobs.filter(job => (job[field] || '').toLowerCase().includes(keyword.toLowerCase())).length;
+
+    const toStat = (kw: string) => {
+      const count = jobs.filter(job => {
+        const text = `${job.job_description} ${job.requirements} ${job.nice_to_have}`;
+        return text.toLowerCase().includes(kw.toLowerCase());
+      }).length;
+      return { keyword: kw, count, percentage: totalJobs > 0 ? Math.round(count / totalJobs * 100) : 0 };
+    };
+
+    const topKeywords = ALL_KEYWORDS
+      .map(toStat)
+      .filter(s => s.count > 0)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 20);
+
+    const categories = KEYWORD_CATEGORIES.map(cat => ({
+      name: cat.name,
+      keywords: cat.keywords
+        .map(toStat)
+        .filter(s => s.count > 0)
+        .sort((a, b) => b.count - a.count),
+      total: cat.keywords.reduce((sum, kw) => sum + matchCount(kw, 'job_description') + matchCount(kw, 'requirements') + matchCount(kw, 'nice_to_have'), 0),
+    }));
+
+    const requirementsKeywords = ALL_KEYWORDS
+      .map(kw => ({ keyword: kw, count: matchCount(kw, 'requirements'), percentage: totalJobs > 0 ? Math.round(matchCount(kw, 'requirements') / totalJobs * 100) : 0 }))
+      .filter(s => s.count > 0)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 15);
+
+    const niceToHaveKeywords = ALL_KEYWORDS
+      .map(kw => ({ keyword: kw, count: matchCount(kw, 'nice_to_have'), percentage: totalJobs > 0 ? Math.round(matchCount(kw, 'nice_to_have') / totalJobs * 100) : 0 }))
+      .filter(s => s.count > 0)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 15);
+
+    res.json({ totalJobs, topKeywords, categories, requirementsKeywords, niceToHaveKeywords });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch skill insights' });
   }
 });
 
