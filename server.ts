@@ -2,7 +2,7 @@ import express from 'express';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import db from './server/db.ts';
-import { KEYWORD_CATEGORIES, ALL_KEYWORDS } from './server/keywords.ts';
+import { KEYWORD_CATEGORIES, ALL_KEYWORDS, matchesKeyword } from './server/keywords.ts';
 import { scanFolder, previewFile, importFile } from './server/imports.ts';
 
 const app = express();
@@ -104,8 +104,8 @@ app.get('/api/stats', (req, res) => {
 
     const keywordStats = ALL_KEYWORDS.map(kw => {
       const count = jobs.filter(job => {
-        const text = `${job.job_description} ${job.requirements} ${job.nice_to_have}`.toLowerCase();
-        return text.includes(kw.toLowerCase());
+        const text = `${job.job_description || ''} ${job.requirements || ''} ${job.nice_to_have || ''}`;
+        return matchesKeyword(text, kw);
       }).length;
       return { keyword: kw, count };
     }).sort((a, b) => b.count - a.count);
@@ -135,17 +135,16 @@ app.get('/api/jobs/:id/skills', (req, res) => {
 
     if (!job) return res.status(404).json({ error: 'Job not found' });
 
-    const desc = (job.job_description || '').toLowerCase();
-    const reqs = (job.requirements || '').toLowerCase();
-    const nice = (job.nice_to_have || '').toLowerCase();
+    const desc = job.job_description || '';
+    const reqs = job.requirements || '';
+    const nice = job.nice_to_have || '';
 
     const categories = KEYWORD_CATEGORIES.map(cat => {
       const matches = cat.keywords
         .map(kw => {
-          const k = kw.toLowerCase();
-          const in_job_description = desc.includes(k);
-          const in_requirements = reqs.includes(k);
-          const in_nice_to_have = nice.includes(k);
+          const in_job_description = matchesKeyword(desc, kw);
+          const in_requirements = matchesKeyword(reqs, kw);
+          const in_nice_to_have = matchesKeyword(nice, kw);
           return { keyword: kw, in_job_description, in_requirements, in_nice_to_have };
         })
         .filter(m => m.in_job_description || m.in_requirements || m.in_nice_to_have);
@@ -166,12 +165,12 @@ app.get('/api/skills/insights', (req, res) => {
     const totalJobs = jobs.length;
 
     const matchCount = (keyword: string, field: string) =>
-      jobs.filter(job => (job[field] || '').toLowerCase().includes(keyword.toLowerCase())).length;
+      jobs.filter(job => matchesKeyword(job[field] || '', keyword)).length;
 
     const toStat = (kw: string) => {
       const count = jobs.filter(job => {
-        const text = `${job.job_description} ${job.requirements} ${job.nice_to_have}`;
-        return text.toLowerCase().includes(kw.toLowerCase());
+        const text = `${job.job_description || ''} ${job.requirements || ''} ${job.nice_to_have || ''}`;
+        return matchesKeyword(text, kw);
       }).length;
       return { keyword: kw, count, percentage: totalJobs > 0 ? Math.round(count / totalJobs * 100) : 0 };
     };

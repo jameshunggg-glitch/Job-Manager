@@ -51,3 +51,16 @@ export const KEYWORD_CATEGORIES: KeywordCategory[] = [
 ];
 
 export const ALL_KEYWORDS = KEYWORD_CATEGORIES.flatMap(c => c.keywords);
+
+// Single-letter keywords (e.g. "R") use word-boundary matching to avoid
+// false positives like "requirements" matching "R". Multi-character
+// keywords keep case-insensitive substring matching so embedded forms such
+// as "MySQL" still match "SQL".
+export function matchesKeyword(text: string, keyword: string): boolean {
+  if (!text || !keyword) return false;
+  if (keyword.length === 1) {
+    const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp(`\\b${escaped}\\b`, 'i').test(text);
+  }
+  return text.toLowerCase().includes(keyword.toLowerCase());
+}
