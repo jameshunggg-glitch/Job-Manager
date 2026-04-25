@@ -1,0 +1,359 @@
+# CLAUDE.md
+
+This file defines the working rules for Claude Code when modifying this repository.
+
+## Project Context
+
+This repository is a personal Job Manager / Job Application Tracker web app.
+
+Current goal: implement the v2 upgrade described in the local specification file provided by the user.
+
+The app is intended to help the user:
+- manage saved job postings
+- track application status
+- import job clipping markdown files from Obsidian Web Clipper
+- analyze skill keywords from saved job descriptions and requirements
+
+## Required Reading Order
+
+Before making any code changes, read in this order:
+
+1. `CLAUDE.md`
+2. the user-provided v2 upgrade spec file in the project root
+3. existing README / docs if available
+4. current project structure
+5. relevant source files only
+
+After reading, do not immediately edit files. First report:
+
+- your understanding of the requested change
+- the current project structure relevant to the task
+- your proposed implementation plan
+- the exact files you expect to modify
+- any risks or unclear points
+
+Wait for user approval before modifying files if the task is broad or ambiguous.
+
+## Scope Control
+
+Do only the requested work.
+
+Do not add features that are not explicitly requested.
+Do not redesign the whole app.
+Do not replace the existing tech stack.
+Do not introduce authentication, deployment, cloud sync, AI analysis, scraping, or external APIs unless explicitly requested.
+Do not convert the app to a different framework.
+
+The current v2 scope is limited to:
+
+- sidebar / navigation restructuring
+- moving Manual Add into an Import Jobs page
+- adding a Skill Insights page
+- adding Obsidian markdown import workflow
+- parsing local markdown clipping files
+- preserving existing Job Posting, Dashboard, Mock Search, and Manual Add functionality
+- keeping personal/private data out of git
+
+## Privacy and Git Safety Rules
+
+Never commit or stage private user data.
+
+Do not commit:
+
+- SQLite database files
+- `.db`, `.sqlite`, `.sqlite3`
+- `.env` or local environment files
+- Obsidian clipping folders
+- real job clipping markdown files
+- personal notes
+- resumes / CVs
+- imported private job data
+- local config containing absolute private paths
+- the user-provided implementation spec file, if it contains private discussion or repo information
+
+Use sample data only when needed.
+
+If a sample markdown file is needed, create a clearly fake or sanitized example under a `samples/` or `tests/fixtures/` folder.
+
+Before every commit, run:
+
+```bash
+git status
+```
+
+Report all staged files before committing.
+
+If any private file appears staged, stop and ask the user.
+
+## .gitignore Requirements
+
+Ensure `.gitignore` excludes at least:
+
+```gitignore
+# database
+*.db
+*.sqlite
+*.sqlite3
+instance/
+data/
+
+# local config
+.env
+.env.local
+
+# private Obsidian / job clipping files
+obsidian_imports/
+clippings/
+job_clippings/
+*.private.md
+
+# local specs provided for agent work
+*_claude_spec.md
+*_upgrade_spec.md
+job_manager_v2_claude_spec.md
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Node
+node_modules/
+dist/
+build/
+```
+
+Do not remove existing `.gitignore` entries unless they are clearly wrong and the user approves.
+
+## Implementation Style
+
+Prefer small, incremental changes.
+
+Do not rewrite large files unless necessary.
+Do not mix unrelated changes in one step.
+Keep existing UI style and naming conventions when possible.
+Keep business logic separated from UI code where practical.
+
+Recommended separation:
+
+- routes/controllers: request handling and page/API routing
+- services: skill analysis, import workflow, parsing logic
+- models/schemas: database and validation definitions
+- templates/components: presentation only
+- tests/fixtures: sanitized sample markdown files
+
+## Step-by-Step Workflow
+
+Work in small phases. A good sequence is:
+
+1. Sidebar and routing update
+2. Import Jobs page skeleton
+3. Move/reuse Manual Add inside Import Jobs
+4. Skill Insights page skeleton
+5. Keyword analysis service
+6. Obsidian markdown parser
+7. Import preview workflow
+8. Save imported jobs to database with deduplication
+9. Tests, cleanup, and documentation updates
+
+After each phase, report:
+
+- files changed
+- summary of implementation
+- how to manually verify
+- tests or checks run
+- known limitations
+
+Commit only after a phase works and the user approves.
+
+## Commit Rules
+
+Use one commit per successful small phase.
+
+Suggested commit messages:
+
+```text
+add v2 sidebar navigation
+add import jobs page
+move manual add into import workflow
+add skill insights page
+add keyword analysis service
+add obsidian markdown parser
+add import preview workflow
+polish v2 import and insights UI
+```
+
+Before committing:
+
+1. run relevant tests/build checks
+2. run `git status`
+3. confirm no private files are staged
+4. summarize changed files to the user
+
+Do not push unless the user explicitly asks.
+
+## Obsidian Import Requirements
+
+The Obsidian importer should read local markdown files generated by Obsidian Web Clipper.
+
+Expected markdown structure may include:
+
+- YAML frontmatter with fields such as `title`, `source`, `created`, `description`, `tags`
+- markdown sections such as `## 工作內容`, `## 條件要求`, `### 工作待遇`, `### 上班地點`
+
+Initial parser should support the provided 104-style clipping format.
+
+Importer should extract when possible:
+
+- job title
+- company name
+- source URL
+- source site
+- job description
+- requirements
+- nice-to-have / preferred qualifications
+- salary
+- location
+- clipped date
+- raw markdown content
+
+Do not assume every clipping has all fields.
+Handle missing fields gracefully.
+
+## Obsidian Import Safety
+
+The app should import from a user-configured local folder path.
+
+Do not hardcode the user's private absolute path into committed source code.
+
+Acceptable approaches:
+
+- environment variable
+- local config file ignored by git
+- UI field for folder path
+- documented placeholder path
+
+If a local config file is created, ensure it is ignored by git.
+
+## Skill Insights Requirements
+
+Skill Insights should be its own page, not part of the main Dashboard.
+
+The page should analyze saved job data using deterministic keyword matching only.
+Do not add AI analysis.
+Do not call LLM APIs.
+
+Analyze text fields such as:
+
+- job description
+- requirements
+- nice-to-have
+
+Display useful summaries such as:
+
+- top keywords
+- categorized skill counts
+- skill frequency across saved jobs
+- requirement vs nice-to-have breakdown if available
+
+The keyword list should be easy to edit in code or config.
+
+Suggested categories:
+
+- Programming: Python, JavaScript, SQL
+- Data / ML: machine learning, statistics, pandas, scikit-learn, deep learning
+- BI / Analytics: Tableau, Power BI, Excel
+- AI / LLM: LLM, RAG, LangChain, prompt engineering, vector database
+- Backend / Web: FastAPI, API, React, Vue, database
+- Cloud / DevOps: AWS, GCP, Azure, Docker, CI/CD
+- Soft Skills: communication, stakeholder, presentation, collaboration
+
+## Dashboard Boundary
+
+Dashboard should remain a high-level summary page.
+
+It may show:
+
+- total jobs
+- status counts
+- recent jobs
+- follow-up reminders
+- quick links
+
+Do not overload Dashboard with detailed skill analysis.
+Detailed skill analysis belongs in Skill Insights.
+
+## Import Jobs Boundary
+
+Import Jobs should become the main data-entry page.
+
+It should include:
+
+- Manual Add section or tab
+- Obsidian Import section or tab
+
+Manual Add should keep existing functionality.
+Do not remove it.
+Do not break existing create-job behavior.
+
+## Testing and Verification
+
+Run existing tests if available.
+
+If there are no tests, perform manual verification and report it clearly.
+
+Minimum manual checks:
+
+- app starts successfully
+- Dashboard opens
+- Job Postings opens
+- Manual Add still creates a job
+- Mock Search still works if it existed before
+- Skill Insights opens and handles empty data
+- Skill Insights works with saved jobs
+- Import Jobs opens
+- Obsidian Import can preview a sample markdown file
+- Imported job appears in Job Postings
+- Duplicate import is handled safely
+
+## Error Handling
+
+Handle errors gracefully.
+
+Examples:
+
+- folder path does not exist
+- no markdown files found
+- markdown file missing frontmatter
+- required job fields cannot be parsed
+- duplicate source URL already exists
+- database save fails
+
+Show user-friendly error messages.
+Do not crash the app for normal bad input.
+
+## Do Not Do
+
+Do not implement real web scraping.
+Do not auto-fetch job content from URLs.
+Do not add browser automation.
+Do not add login/auth.
+Do not add cloud deployment.
+Do not add AI/LLM analysis.
+Do not commit private job data.
+Do not commit the local spec file.
+Do not rewrite the app from scratch.
+Do not change the license or repo ownership.
+
+## When Unsure
+
+Stop and ask the user before proceeding if:
+
+- a requirement is ambiguous
+- implementation would require a large rewrite
+- private data might be staged or committed
+- the change affects project architecture
+- a dependency needs to be added
+- a feature is outside the v2 scope
+
