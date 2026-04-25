@@ -5,6 +5,7 @@ import {
   ScanResponse,
   ImportPreviewResponse,
   ImportResponse,
+  JobSkillsResponse,
 } from './types';
 
 const API_BASE = '/api';
@@ -27,6 +28,8 @@ export const api = {
   }).then(r => r.json()),
   getStats: () => fetch(`${API_BASE}/stats`).then(r => r.json() as Promise<DashboardStats>),
   getSkillInsights: () => fetch(`${API_BASE}/skills/insights`).then(r => r.json() as Promise<SkillInsightsData>),
+  getJobSkills: (id: string | number) =>
+    fetch(`${API_BASE}/jobs/${id}/skills`).then(r => r.json() as Promise<JobSkillsResponse>),
   obsidianScan: (folderPath: string) => fetch(`${API_BASE}/import/obsidian/scan`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

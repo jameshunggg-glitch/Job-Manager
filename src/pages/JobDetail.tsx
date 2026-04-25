@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
-import { JobPosting } from '../types';
-import { STATUS_LABELS, STATUS_COLORS } from '../lib/utils';
-import { MapPin, Globe, DollarSign, Calendar, Edit2, Trash2, ArrowLeft, ExternalLink, Clock } from 'lucide-react';
+import { JobPosting, JobSkillsResponse } from '../types';
+import { STATUS_LABELS, STATUS_COLORS, cn } from '../lib/utils';
+import { MapPin, Globe, DollarSign, Calendar, Edit2, Trash2, ArrowLeft, ExternalLink, Clock, Sparkles } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface JobDetailProps {
@@ -14,9 +14,11 @@ interface JobDetailProps {
 
 export default function JobDetail({ jobId, onBack, onEdit, onDelete }: JobDetailProps) {
   const [job, setJob] = useState<JobPosting | null>(null);
+  const [skills, setSkills] = useState<JobSkillsResponse | null>(null);
 
   useEffect(() => {
     api.getJob(jobId).then(setJob);
+    api.getJobSkills(jobId).then(setSkills).catch(() => setSkills(null));
   }, [jobId]);
 
   const handleDelete = async () => {
@@ -66,6 +68,8 @@ export default function JobDetail({ jobId, onBack, onEdit, onDelete }: JobDetail
               </div>
             </div>
 
+            {skills && skills.total_matches > 0 && <SkillTagsSection skills={skills} />}
+
             <div className="prose prose-slate max-w-none">
               <Section title="Job Description" content={job.job_description} />
               <Section title="Requirements" content={job.requirements} />
@@ -110,6 +114,51 @@ export default function JobDetail({ jobId, onBack, onEdit, onDelete }: JobDetail
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function SkillTagsSection({ skills }: { skills: JobSkillsResponse }) {
+  return (
+    <div className="border-t border-slate-100 pt-5 space-y-3">
+      <h3 className="text-sm font-bold text-blue-600 uppercase tracking-widest flex items-center gap-2">
+        <Sparkles size={14} /> 命中技能 ({skills.total_matches})
+      </h3>
+      <div className="space-y-3">
+        {skills.categories.map(cat => (
+          <div key={cat.name} className="space-y-1.5">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{cat.name}</p>
+            <div className="flex flex-wrap gap-1.5">
+              {cat.matches.map(m => {
+                const tone = m.in_requirements
+                  ? 'bg-indigo-50 text-indigo-700 border-indigo-100'
+                  : m.in_nice_to_have
+                    ? 'bg-violet-50 text-violet-700 border-violet-100'
+                    : 'bg-slate-50 text-slate-600 border-slate-200';
+                const tooltip = [
+                  m.in_requirements && '必要條件',
+                  m.in_nice_to_have && '加分條件',
+                  m.in_job_description && '工作內容',
+                ].filter(Boolean).join(' / ');
+                return (
+                  <span
+                    key={m.keyword}
+                    title={tooltip}
+                    className={cn('px-2.5 py-1 rounded-full text-[11px] font-semibold border', tone)}
+                  >
+                    {m.keyword}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+      <p className="text-[10px] text-slate-400">
+        <span className="inline-block w-2 h-2 rounded-full bg-indigo-300 mr-1 align-middle" /> 必要條件
+        <span className="inline-block w-2 h-2 rounded-full bg-violet-300 ml-3 mr-1 align-middle" /> 加分條件
+        <span className="inline-block w-2 h-2 rounded-full bg-slate-300 ml-3 mr-1 align-middle" /> 工作內容
+      </p>
     </div>
   );
 }

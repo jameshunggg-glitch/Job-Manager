@@ -125,6 +125,41 @@ app.get('/api/stats', (req, res) => {
   }
 });
 
+app.get('/api/jobs/:id/skills', (req, res) => {
+  try {
+    const job = db
+      .prepare('SELECT id, job_description, requirements, nice_to_have FROM job_postings WHERE id = ?')
+      .get(req.params.id) as
+      | { id: number; job_description: string; requirements: string; nice_to_have: string | null }
+      | undefined;
+
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+
+    const desc = (job.job_description || '').toLowerCase();
+    const reqs = (job.requirements || '').toLowerCase();
+    const nice = (job.nice_to_have || '').toLowerCase();
+
+    const categories = KEYWORD_CATEGORIES.map(cat => {
+      const matches = cat.keywords
+        .map(kw => {
+          const k = kw.toLowerCase();
+          const in_job_description = desc.includes(k);
+          const in_requirements = reqs.includes(k);
+          const in_nice_to_have = nice.includes(k);
+          return { keyword: kw, in_job_description, in_requirements, in_nice_to_have };
+        })
+        .filter(m => m.in_job_description || m.in_requirements || m.in_nice_to_have);
+      return { name: cat.name, matches };
+    }).filter(cat => cat.matches.length > 0);
+
+    const total_matches = categories.reduce((sum, cat) => sum + cat.matches.length, 0);
+
+    res.json({ job_id: job.id, total_matches, categories });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch job skills' });
+  }
+});
+
 app.get('/api/skills/insights', (req, res) => {
   try {
     const jobs = db.prepare('SELECT job_description, requirements, nice_to_have FROM job_postings').all() as any[];

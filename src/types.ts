@@ -85,3 +85,21 @@ export interface ImportResponse {
   duplicate_reason?: string;
   warnings: string[];
 }
+
+export interface JobSkillMatch {
+  keyword: string;
+  in_job_description: boolean;
+  in_requirements: boolean;
+  in_nice_to_have: boolean;
+}
+
+export interface JobSkillCategory {
+  name: string;
+  matches: JobSkillMatch[];
+}
+
+export interface JobSkillsResponse {
+  job_id: number;
+  total_matches: number;
+  categories: JobSkillCategory[];
+}
