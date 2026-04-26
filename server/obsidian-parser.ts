@@ -45,15 +45,41 @@ function inferSourceFromUrl(url: string): string {
 function splitTitle(rawTitle: string): { title: string; company: string; sourceFromTitle: string } {
   if (!rawTitle) return { title: '', company: '', sourceFromTitle: '' };
   const t = rawTitle.trim();
-  const parts = t.split(/[｜|]/);
-  if (parts.length >= 2) {
-    const titlePart = parts[0].trim();
-    const rest = parts.slice(1).join('|').trim();
-    const restParts = rest.split(/[－-]/);
-    const company = (restParts[0] || '').trim();
-    const sourceFromTitle = restParts.slice(1).join('-').trim();
-    return { title: titlePart, company, sourceFromTitle };
+  const pipeParts = t.split(/[｜|]/);
+
+  if (pipeParts.length >= 2) {
+    const head = pipeParts[0].trim();
+    // Yourator: "職稱 - 公司｜source...". The space-dash-space discriminator
+    // avoids false positives on 104 titles where '-' appears inside the
+    // job-title segment (e.g. "資訊處-人工智慧").
+    if (head.includes(' - ')) {
+      const dashIdx = head.indexOf(' - ');
+      return {
+        title: head.slice(0, dashIdx).trim(),
+        company: head.slice(dashIdx + 3).trim(),
+        sourceFromTitle: pipeParts.slice(1).join('｜').trim(),
+      };
+    }
+    // 104 / 1111 / LinkedIn: "職稱｜公司..."
+    const second = (pipeParts[1] || '').trim();
+    const secondParts = second.split(/[－-]/);
+    return {
+      title: head,
+      company: (secondParts[0] || '').trim(),
+      sourceFromTitle: secondParts.slice(1).join('-').trim(),
+    };
   }
+
+  // Cake: "職稱 - 公司" (no pipe at all)
+  if (t.includes(' - ')) {
+    const dashIdx = t.indexOf(' - ');
+    return {
+      title: t.slice(0, dashIdx).trim(),
+      company: t.slice(dashIdx + 3).trim(),
+      sourceFromTitle: '',
+    };
+  }
+
   return { title: t, company: '', sourceFromTitle: '' };
 }
 
@@ -101,8 +127,21 @@ function findHeadingIndex(headings: HeadingNode[], candidates: string[]): number
 }
 
 function pickSection(headings: HeadingNode[], candidates: string[]): string {
-  const idx = findHeadingIndex(headings, candidates);
-  return idx >= 0 ? headings[idx].body : '';
+  // Walk candidates in priority order, skipping empty-body matches. This
+  // handles 1111's layout where `## 工作內容` exists but has no direct body
+  // (its content lives in `### 職缺描述` underneath) — we want the first
+  // candidate that actually has content, not the first one that exists.
+  for (const candidate of candidates) {
+    const h = headings.find(node => node.heading === candidate && node.body);
+    if (h) return h.body;
+  }
+  for (const h of headings) {
+    if (!h.body) continue;
+    for (const c of candidates) {
+      if (h.heading.includes(c)) return h.body;
+    }
+  }
+  return '';
 }
 
 // pickBlock returns the matched heading's body PLUS any nested subheadings
@@ -146,13 +185,13 @@ export function parseObsidianMarkdown(text: string): ParseResult {
   const headings = extractHeadings(body);
 
   const job_description =
-    pickSection(headings, ['工作內容', 'Job Description', 'Description']) ||
+    pickSection(headings, ['職缺描述', '工作內容', '關於該職缺', 'Job Description', 'Description']) ||
     (typeof fm.description === 'string' ? fm.description : '');
 
-  const requirements = pickBlock(headings, ['條件要求', 'Requirements', 'Qualifications']);
+  const requirements = pickBlock(headings, ['條件要求', '要求條件', '職務需求', 'Requirements', 'Qualifications']);
   const nice_to_have = pickBlock(headings, ['加分條件', 'Nice to Have', 'Preferred Qualifications', 'Preferred']);
-  const salary = pickSection(headings, ['工作待遇', 'Salary', 'Compensation']);
-  const location = pickSection(headings, ['上班地點', 'Location']);
+  const salary = pickSection(headings, ['工作待遇', '薪資範圍', 'Salary', 'Compensation']);
+  const location = pickSection(headings, ['上班地點', '工作地點', 'Location']);
 
   let created: string | null = null;
   if (typeof fm.created === 'string') {
