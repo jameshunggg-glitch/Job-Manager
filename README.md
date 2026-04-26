@@ -1,20 +1,56 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Job Manager
 
-# Run and deploy your AI Studio app
+A personal job application tracker. Save job postings, track application status, import clippings from Obsidian Web Clipper, and analyze skill keywords across your saved jobs — all stored in a local SQLite file. No cloud, no auth, no LLMs.
 
-This contains everything you need to run your app locally.
+## Features
 
-View your app in AI Studio: https://ai.studio/apps/c8642f60-cb6c-4719-b3d2-e2588d81788e
+- **Dashboard** — totals, status breakdown, top-3 skills summary
+- **Job Postings** — searchable list, status filter, inline delete, detail view with matched skill tags
+- **Skill Insights** — top keywords, requirements vs nice-to-have, category breakdown, preparation focus
+- **Import Jobs** — manual add form, plus Obsidian markdown importer (folder scan → preview → import with dedup)
+- **Mock Search** — sample job listings for demo
 
-## Run Locally
+## Supported Obsidian Web Clipper sources
 
-**Prerequisites:**  Node.js
+The markdown importer parses clippings from:
 
+| Site | Domain |
+|---|---|
+| 104 人力銀行 | `104.com.tw` |
+| 1111 人力銀行 | `1111.com.tw` |
+| Cake | `cake.me` |
+| Yourator | `yourator.co` |
+| LinkedIn | `linkedin.com` |
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+Each site uses different heading vocabulary and title formatting; the parser handles all five.
+
+## Tech stack
+
+- React 19 + Vite + Tailwind CSS (frontend)
+- Express (API)
+- better-sqlite3 (local file-based DB, no separate install)
+- gray-matter (markdown frontmatter)
+- TypeScript end to end, served by `tsx` in dev (no build step required to run)
+
+## Run locally
+
+See [requirements.txt](./requirements.txt) for system prerequisites.
+
+```bash
+npm install
+npm run dev
+# open http://localhost:3000
+```
+
+The first boot creates `jobs.sqlite` in the project root. The schema migrates additively on each start, so existing data is preserved across upgrades.
+
+## Privacy
+
+Personal data is kept out of git by `.gitignore`:
+
+- `*.sqlite` / `*.db` — the job database
+- `obsidian_imports/`, `clippings/`, `job_clippings/`, `*.private.md` — clipping folders
+- `.env`, `.env.local`
+- `*_claude_spec.md` — local planning docs
+
+The Obsidian importer takes the path to your clippings folder at runtime via the UI; it's never persisted to code or git.
